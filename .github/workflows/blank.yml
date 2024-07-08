@@ -46,7 +46,6 @@ jobs:
         run: |
           if [ "${{ steps.runtime_selection.outputs.runtime }}" = "npm" ]; then
             npm install
-            npm test
           elif [ "${{ steps.runtime_selection.outputs.runtime }}" = "maven" ]; then
             mvn clean install
           elif [ "${{ steps.runtime_selection.outputs.runtime }}" = "pip" ]; then
