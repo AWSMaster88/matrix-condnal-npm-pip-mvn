@@ -1,0 +1,42 @@
+name: Matrix Strategy Example
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        runtime:
+          - name: npm
+            if: startsWith(github.event.head_commit.message, 'npm')
+          - name: maven
+            if: startsWith(github.event.head_commit.message, 'maven')
+          - name: pip
+            if: startsWith(github.event.head_commit.message, 'pip')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up ${{ matrix.runtime }} environment
+        run: echo "Setting up ${{ matrix.runtime }} environment"
+
+      - name: Build and test with ${{ matrix.runtime }}
+        run: |
+          if [ "${{ matrix.runtime }}" = "npm" ]; then
+            npm install
+            npm test
+          elif [ "${{ matrix.runtime }}" = "maven" ]; then
+            mvn clean install
+          elif [ "${{ matrix.runtime }}" = "pip" ]; then
+            pip install -r requirements.txt
+            pytest
+          fi
