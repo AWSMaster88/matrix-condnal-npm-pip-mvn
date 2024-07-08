@@ -15,30 +15,41 @@ jobs:
     strategy:
       matrix:
         runtime:
-          - name: npm
-            if: startsWith(github.event.head_commit.message, 'npm')
-          - name: maven
-            if: startsWith(github.event.head_commit.message, 'maven')
-          - name: pip
-            if: startsWith(github.event.head_commit.message, 'pip')
+          - npm
+          - maven
+          - pip
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up ${{ matrix.runtime }} environment
-        if: matrix.runtime == github.event.head_commit.message.split(' ')[0]
-        run: echo "Setting up ${{ matrix.runtime }} environment"
-
-      - name: Build and test with ${{ matrix.runtime }}
-        if: matrix.runtime == github.event.head_commit.message.split(' ')[0]
+      - name: Determine runtime from commit message
+        id: runtime_selection
         run: |
-          if [ "${{ matrix.runtime }}" = "npm" ]; then
+          if [[ "${{ github.event.head_commit.message }}" == npm* ]]; then
+            echo "::set-output name=runtime::npm"
+          elif [[ "${{ github.event.head_commit.message }}" == maven* ]]; then
+            echo "::set-output name=runtime::maven"
+          elif [[ "${{ github.event.head_commit.message }}" == pip* ]]; then
+            echo "::set-output name=runtime::pip"
+          else
+            echo "::error::Unsupported runtime specified in commit message"
+            exit 1
+          fi
+
+      - name: Set up ${{ steps.runtime_selection.outputs.runtime }} environment
+        if: steps.runtime_selection.outputs.runtime == matrix.runtime
+        run: echo "Setting up ${{ steps.runtime_selection.outputs.runtime }} environment"
+
+      - name: Build and test with ${{ steps.runtime_selection.outputs.runtime }}
+        if: steps.runtime_selection.outputs.runtime == matrix.runtime
+        run: |
+          if [ "${{ steps.runtime_selection.outputs.runtime }}" = "npm" ]; then
             npm install
             npm test
-          elif [ "${{ matrix.runtime }}" = "maven" ]; then
+          elif [ "${{ steps.runtime_selection.outputs.runtime }}" = "maven" ]; then
             mvn clean install
-          elif [ "${{ matrix.runtime }}" = "pip" ]; then
+          elif [ "${{ steps.runtime_selection.outputs.runtime }}" = "pip" ]; then
             pip install -r requirements.txt
             pytest
           fi
